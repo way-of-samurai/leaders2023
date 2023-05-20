@@ -1,2 +1,2 @@
-[Изучение данных - начало](explore.org)
-[Average Precision@K основная метрика](metric.org)
+- [Изучение данных - начало](explore.org) так же смотри [Описание Датасетов](https://github.com/way-of-samurai/vit-recom-system#%D0%B4%D0%B0%D1%82%D0%B0%D1%81%D0%B5%D1%82%D1%8B)
+- [Average Precision@K основная метрика](metric.org)
