@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--primary-50);
+}
+
+.p-card.p-card-stretch .p-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.p-card.p-card-stretch .p-card-content {
+  flex-grow: 1;
+}

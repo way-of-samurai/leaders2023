@@ -1,0 +1,8 @@
+import { NextResponse } from "next/server"
+
+export async function POST(req) {
+  console.log(req.body)
+  let resp = NextResponse.next()
+  resp.cookies.set("token", "qwerty12345")
+  return resp
+}
