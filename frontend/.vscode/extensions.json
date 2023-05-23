@@ -3,6 +3,7 @@
         "dbaeumer.vscode-eslint",
         "bradlc.vscode-tailwindcss",
         "dsznajder.es7-react-js-snippets",
+        "Prisma.prisma",
         "formulahendry.auto-rename-tag",
         "ms-azuretools.vscode-docker"
     ]
