@@ -1,5 +1,6 @@
 'use client'
 import * as Yup from "yup";
+import moment from "moment";
 import { useFormik } from "formik";
 import { useTransition } from "react";
 import { Button, Calendar, InputText } from "@/components/primereact";
@@ -31,7 +32,7 @@ export default function SignInForm() {
     onSubmit: (data) => {
       startTransition(() => signIn({
         ...data,
-        birthdate: new Date(data.birthdate)
+        birthdate: moment(new Date(data.birthdate)).local().format("YYYY-MM-DD")
       }))
     }
   })

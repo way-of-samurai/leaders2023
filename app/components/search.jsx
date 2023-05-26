@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from "react";
-import { Button, Card, Chip, InputText, MultiSelect } from "@/components/primereact"
+import { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Link from "next/link";
+import moment from "moment";
+import { Button, Card, Chip, InputText, MultiSelect } from "@/components/primereact"
 
 const directions = [
   { code: "sport", label: "Спорт" },
@@ -43,51 +44,51 @@ const locations = [
   }
 ]
 
-const times = [
-  { id: "monday", label: "Понедельник" },
-  { id: "tuesay", label: "Вторник" },
-  { id: "wednesday", label: "Среда" },
-  { id: "thursday", label: "Четверг" },
-  { id: "friday", label: "Пятница" },
-  { id: "saturday", label: "Суббота" },
-  { id: "sunday", label: "Воскресенье" },
+const dows = [
+  { code: "MONDAY", label: "Понедельник" },
+  { code: "TUESAY", label: "Вторник" },
+  { code: "WENDSDAY", label: "Среда" },
+  { code: "THURSDAY", label: "Четверг" },
+  { code: "FRIDAY", label: "Пятница" },
+  { code: "SATURDAY", label: "Суббота" },
+  { code: "SUNDAY", label: "Воскресенье" },
 ]
 
-export default function Search() {
-  // const [activities, setAcitivites] = useState([])
-  const activities = [
-    {
-      directions: ["Образование"],
-      name: "Английский язык",
-      isOnline: false,
-      address: "город Москва, улица Мусы Джалиля, улица Мусы Джалиля, дом 25А",
-      time: "Вт 11:15-13:15"
-    },
-    {
-      directions: ["Образование"],
-      name: "Английский язык",
-      isOnline: true,
-      address: "город Москва, дом 25А",
-      time: "Вт 11:15-13:15"
-    },
-    {
-      directions: ["Образование"],
-      name: "Английский язык",
-      isOnline: false,
-      address: "город Москва, улица Мусы Джалиля, дом 25А",
-      time: "Вт 11:15-13:15"
-    }
-  ]
-  const initialValues = {
-      search: "",
-      direction: [],
-      location: [],
-      time: [],
+const initialValues = {
+  search: "",
+  category: [],
+  location: [],
+  dow: [],
+}
+
+function formatDow(code) {
+  switch (code) {
+    case "MONDAY": return "Пн"
+    case "TUESDAY": return "Вт"
+    case "WENDSDAY": return "Ср"
+    case "THURSDAY": return "Чт"
+    case "FRIDAY": return "Пт"
+    case "SATURDAY": return "Сб"
+    case "SUNDAY": return "Вс"
   }
+}
+
+export default function Search() {
+  const [groups, setGroups] = useState([])
+
+  const getGroups = async (query) => {
+    return fetch(`/api/search?${new URLSearchParams(query)}`)
+      .then((response) => response.json())
+      .then((data) => setGroups(data.groups))
+  }
+
+  useEffect(() => { getGroups(initialValues) }, [])
+
   const formik = useFormik({
     initialValues: initialValues,
-    onSubmit: (data) => {
-      console.log(data)
+    onSubmit: async (data) => {
+      await getGroups(data)
+      console.log(groups)
     }
   })
 
@@ -141,22 +142,22 @@ export default function Search() {
                   onChange={formik.handleChange}
                   filter
                 />
-                <label htmlFor="direction">Место проведения</label>
+                <label htmlFor="type">Место проведения</label>
               </span>
               <span className="p-float-label flex-grow min-w-[200px]">
                 <MultiSelect
-                  id="time"
-                  name="time"
+                  id="dow"
+                  name="dow"
                   className="w-full"
-                  options={times}
+                  options={dows}
                   optionLabel="label"
                   showSelectAll={false}
                   maxSelectedLabels={2}
                   selectedItemsLabel="{0} выбрано"
-                  value={formik.values.time}
+                  value={formik.values.dow}
                   onChange={formik.handleChange}
                 />
-                <label htmlFor="direction">Время проведения</label>
+                <label htmlFor="dow">Время проведения</label>
               </span>
             </div>
           </div>
@@ -176,23 +177,25 @@ export default function Search() {
         </form>
       </Card>
       <div className="flex flex-row flex-wrap justify-between gap-4">
-        {activities.map((activity, index) => (
+        {groups.map((group, index) => (
           <Card
             key={index}
             className="p-card-stretch flex-grow md:max-w-[50%]"
             title={
               <div className="flex flex-col">
-                <h5 className="text-base font-semibold">{activity.directions[0]}</h5>
-                <h2>{activity.name}</h2>
+                <h5 className="text-base font-semibold">{group.categories.at(-2)}</h5>
+                <h2>{group.categories.at(-1)}</h2>
               </div>
             }
             subTitle={
               <div className="flex flex-row flex-wrap gap-2">
-                { activity.isOnline ?
-                  <Chip label="Онлайн занятие" className="!text-sm" /> :
-                  <Chip label="Очное занятие" className="!text-sm !font-semibold" />
+                { group.type == "OFFLINE" ?
+                  <Chip label="Очное занятие" className="!text-sm !font-semibold" /> :
+                  <Chip label="Онлайн занятие" className="!text-sm" />
                 }
-                <Chip label="Группа занимается" className="!text-sm" />
+                { new Date(group.startDate) <= new Date() &&
+                  <Chip label="Группа занимается" className="!text-sm" />
+                }
               </div>
             }
             footer={
@@ -221,10 +224,23 @@ export default function Search() {
           >
             <div className="flex flex-col justify-between gap-4 h-full">
               <div>
-                <p>{activity.address}</p>
+                <p>{group.address}</p>
               </div>
               <div>
-                <p>{activity.time}</p>
+                <p>
+                  Занятия проводятся с
+                  <span className="font-semibold ml-2">
+                    {moment(group.startDate).format("DD.MM.YYYY")}
+                  </span>
+                </p>
+                { group.timetable.map((time, index) => (
+                  <p key={index}>
+                    <span className="font-semibold mr-2">
+                      {formatDow(time.dow)}
+                    </span>
+                    {`${time.timeStart} - ${time.timeEnd}`}
+                  </p>
+                )) }
               </div>
             </div>
           </Card>
