@@ -8,7 +8,7 @@ CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE');
 CREATE TYPE "LocationType" AS ENUM ('DISTRICT', 'AREA', 'METRO');
 
 -- CreateEnum
-CREATE TYPE "GroupType" AS ENUM ('ONLINE', 'OFFLINE');
+CREATE TYPE "CategoryType" AS ENUM ('ONLINE', 'OFFLINE');
 
 -- CreateEnum
 CREATE TYPE "PeriodType" AS ENUM ('ACTIVE', 'CLOSED', 'PLANNED');
@@ -23,7 +23,7 @@ CREATE TABLE "Location" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "type" "LocationType" NOT NULL,
     "name" TEXT NOT NULL,
-    "point" geometry(Point, 4326) NOT NULL,
+    "point" geometry(Point, 4326),
 
     CONSTRAINT "Location_pkey" PRIMARY KEY ("id")
 );
@@ -40,7 +40,7 @@ CREATE TABLE "User" (
     "gender" "Gender",
     "birthdate" DATE NOT NULL,
     "address" TEXT,
-    "address_point" geometry(Point, 4326),
+    "addressPoint" geometry(Point, 4326),
     "quizPassed" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -54,6 +54,7 @@ CREATE TABLE "Category" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "level" SMALLINT NOT NULL,
     "name" TEXT NOT NULL,
+    "type" "CategoryType" NOT NULL,
     "description" TEXT,
     "parentId" INTEGER,
 
@@ -66,11 +67,11 @@ CREATE TABLE "Group" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "externalId" INTEGER NOT NULL,
-    "type" "GroupType" NOT NULL,
+    "categoryId" INTEGER NOT NULL,
     "address" TEXT NOT NULL,
     "district" TEXT,
     "areaId" INTEGER,
-    "address_point" geometry(Point, 4326) NOT NULL,
+    "addressPoint" geometry(Point, 4326) NOT NULL,
     "important" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Group_pkey" PRIMARY KEY ("id")
@@ -90,15 +91,6 @@ CREATE TABLE "Timetable" (
     "timeEnd" TIME(0) NOT NULL,
 
     CONSTRAINT "Timetable_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "CategoriesOnGroups" (
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "groupId" INTEGER NOT NULL,
-    "categoryId" INTEGER NOT NULL,
-
-    CONSTRAINT "CategoriesOnGroups_pkey" PRIMARY KEY ("groupId","categoryId")
 );
 
 -- CreateTable
@@ -147,7 +139,7 @@ CREATE TABLE "Attend" (
     "externalUserId" INTEGER NOT NULL,
     "groupId" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
-    "type" "GroupType" NOT NULL,
+    "type" "CategoryType" NOT NULL,
     "date" DATE NOT NULL,
     "timeStart" TIME(0) NOT NULL,
     "timeEnd" TIME(0) NOT NULL,
@@ -172,7 +164,7 @@ CREATE INDEX "location_point_idx" ON "Location" USING GIST ("point");
 CREATE INDEX "User_externalId_idx" ON "User"("externalId");
 
 -- CreateIndex
-CREATE INDEX "user_address_point_idx" ON "User" USING GIST ("address_point");
+CREATE INDEX "user_address_point_idx" ON "User" USING GIST ("addressPoint");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_firstName_lastName_middleName_birthdate_key" ON "User"("firstName", "lastName", "middleName", "birthdate");
@@ -187,7 +179,7 @@ CREATE UNIQUE INDEX "Category_level_name_key" ON "Category"("level", "name");
 CREATE UNIQUE INDEX "Group_externalId_key" ON "Group"("externalId");
 
 -- CreateIndex
-CREATE INDEX "group_address_point_idx" ON "Group" USING GIST ("address_point");
+CREATE INDEX "group_address_point_idx" ON "Group" USING GIST ("addressPoint");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Timetable_groupId_type_dateStart_dateEnd_dow_timeStart_time_key" ON "Timetable"("groupId", "type", "dateStart", "dateEnd", "dow", "timeStart", "timeEnd");
@@ -220,16 +212,13 @@ CREATE INDEX "Attend_groupId_userId_idx" ON "Attend"("groupId", "userId");
 ALTER TABLE "Category" ADD CONSTRAINT "Category_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Group" ADD CONSTRAINT "Group_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Group" ADD CONSTRAINT "Group_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "Location"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Timetable" ADD CONSTRAINT "Timetable_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CategoriesOnGroups" ADD CONSTRAINT "CategoriesOnGroups_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CategoriesOnGroups" ADD CONSTRAINT "CategoriesOnGroups_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QuestionOption" ADD CONSTRAINT "QuestionOption_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -23,7 +23,7 @@ enum LocationType {
   METRO
 }
 
-enum GroupType {
+enum CategoryType {
   ONLINE
   OFFLINE
 }
@@ -45,73 +45,74 @@ enum DayOfWeek {
 }
 
 model Location {
-  id        Int                                  @id @default(autoincrement())
-  createdAt DateTime                             @default(now())
-  updatedAt DateTime                             @default(now()) @updatedAt
+  id        Int                                   @id @default(autoincrement())
+  createdAt DateTime                              @default(now())
+  updatedAt DateTime                              @default(now()) @updatedAt
   type      LocationType
   name      String
-  point     Unsupported("geometry(Point, 4326)")
+  point     Unsupported("geometry(Point, 4326)")?
   groups    Group[]
 
   @@index([point], name: "location_point_idx", type: Gist)
 }
 
 model User {
-  id             Int                                   @id @default(autoincrement())
-  createdAt      DateTime                              @default(now())
-  updatedAt      DateTime                              @default(now()) @updatedAt
-  externalId     Int?
-  firstName      String
-  lastName       String
-  middleName     String
-  gender         Gender?
-  birthdate      DateTime                              @db.Date
-  address        String?
-  address_point  Unsupported("geometry(Point, 4326)")?
-  quizPassed     Boolean                               @default(false)
-  answers        QuestionAnswer[]
-  attends        Attend[]
+  id              Int                                   @id @default(autoincrement())
+  createdAt       DateTime                              @default(now())
+  updatedAt       DateTime                              @default(now()) @updatedAt
+  externalId      Int?
+  firstName       String
+  lastName        String
+  middleName      String
+  gender          Gender?
+  birthdate       DateTime                              @db.Date
+  address         String?
+  addressPoint    Unsupported("geometry(Point, 4326)")?
+  quizPassed      Boolean                               @default(false)
+  answers         QuestionAnswer[]
+  attends         Attend[]
   recommendations Recommendation[]
 
   @@unique([firstName, lastName, middleName, birthdate])
   @@index(externalId)
-  @@index([address_point], name: "user_address_point_idx", type: Gist)
+  @@index([addressPoint], name: "user_address_point_idx", type: Gist)
 }
 
 model Category {
-  id             Int                  @id @default(autoincrement())
-  externalId     Int                  @unique
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @default(now()) @updatedAt
-  level          Int                  @db.SmallInt
-  name           String
-  description    String?
-  parentId       Int?
-  parent         Category?            @relation("CategorySubcategories", fields: [parentId], references: [id])
-  subcategories  Category[]           @relation("CategorySubcategories")
-  groups         CategoriesOnGroups[]
+  id              Int              @id @default(autoincrement())
+  externalId      Int              @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now()) @updatedAt
+  level           Int              @db.SmallInt
+  name            String
+  type            CategoryType
+  description     String?
+  parentId        Int?
+  parent          Category?        @relation("CategorySubcategories", fields: [parentId], references: [id])
+  subcategories   Category[]       @relation("CategorySubcategories")
+  groups          Group[]
   recommendations Recommendation[]
 
   @@unique([level, name])
 }
 
 model Group {
-  id            Int                                  @id @default(autoincrement())
-  createdAt     DateTime                             @default(now())
-  updatedAt     DateTime                             @default(now()) @updatedAt
-  externalId    Int                                  @unique
-  type          GroupType
-  categories    CategoriesOnGroups[]
-  address       String
-  district      String?
-  area          Location?                            @relation(fields: [areaId], references: [id])
-  areaId        Int?
-  address_point Unsupported("geometry(Point, 4326)")
-  important     Boolean                              @default(false)
-  timetable     Timetable[]
-  attends       Attend[]
+  id           Int                                  @id @default(autoincrement())
+  createdAt    DateTime                             @default(now())
+  updatedAt    DateTime                             @default(now()) @updatedAt
+  externalId   Int                                  @unique
+  category     Category                             @relation(fields: [categoryId], references: [id])
+  categoryId   Int
+  address      String
+  district     String?
+  area         Location?                            @relation(fields: [areaId], references: [id])
+  areaId       Int?
+  addressPoint Unsupported("geometry(Point, 4326)")
+  important    Boolean                              @default(false)
+  timetable    Timetable[]
+  attends      Attend[]
 
-  @@index([address_point], name: "group_address_point_idx", type: Gist)
+  @@index([addressPoint], name: "group_address_point_idx", type: Gist)
 }
 
 model Timetable {
@@ -128,16 +129,6 @@ model Timetable {
   timeEnd   DateTime   @db.Time(0)
 
   @@unique([groupId, type, dateStart, dateEnd, dow, timeStart, timeEnd])
-}
-
-model CategoriesOnGroups {
-  createdAt  DateTime @default(now())
-  group      Group    @relation(fields: [groupId], references: [id])
-  groupId    Int
-  category   Category @relation(fields: [categoryId], references: [id])
-  categoryId Int
-
-  @@id([groupId, categoryId])
 }
 
 model Question {
@@ -187,7 +178,7 @@ model Attend {
   groupId            Int
   user               User      @relation(fields: [userId], references: [id])
   userId             Int
-  type               GroupType
+  type               CategoryType
   date               DateTime  @db.Date
   timeStart          DateTime  @db.Time(0)
   timeEnd            DateTime  @db.Time(0)

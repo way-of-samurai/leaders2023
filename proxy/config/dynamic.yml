@@ -1,0 +1,14 @@
+---
+http:
+  routers:
+    leaders2023:
+      entrypoints:
+        - websecure
+      rule: Host(`leaders2023.hpclab.ru`)
+      service: leaders2023
+
+  services:
+    leaders2023:
+      loadBalancer:
+        servers:
+          - url: http://10.50.50.34:3000

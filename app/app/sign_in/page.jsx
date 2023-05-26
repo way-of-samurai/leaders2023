@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/primereact";
 import SignInForm from "@/components/sign_in_form";
@@ -20,7 +21,9 @@ export default async function SignIn() {
         subTitle="Пожалуйста, введите Ваши ФИО и дату рождения"
         className="max-w-full w-[450px]"
       >
-        <SignInForm />
+        <Suspense>
+          <SignInForm />
+        </Suspense>
       </Card>
     </main>
   )

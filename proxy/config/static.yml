@@ -1,0 +1,28 @@
+---
+accessLog: {}
+certificatesResolvers:
+  acme:
+    email: dsinelnikov96@gmail.com
+    storage: /letsencrypt/acme.json
+    httpChallenge:
+      entryPoint: web
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          scheme: https
+          to: websecure
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: dns
+log:
+  level: INFO
+providers:
+  file:
+    directory: /config
+serversTransport:
+  insecureSkipVerify: true

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Search from "@/components/search";
 import { isUnauthenticated } from "@/lib/auth";
@@ -8,7 +9,9 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <Search />
+      <Suspense>
+        <Search />
+      </Suspense>
     </main>
   )
 }
