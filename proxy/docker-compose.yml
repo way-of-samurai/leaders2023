@@ -6,9 +6,6 @@ services:
     container_name: traefik
     network_mode: host
     command: "--configFile /config/static.yaml"
-    environment:
-      REGRU_USERNAME: ${REGRU_USERNAME}
-      REGRU_PASSWORD: ${REGRU_PASSWORD}
     volumes:
       - ./config:/config:ro
       - /etc/localtime:/etc/localtime:ro
