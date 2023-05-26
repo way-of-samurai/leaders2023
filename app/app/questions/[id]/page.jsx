@@ -3,6 +3,7 @@ import QuestionsConfirmDialog from "@/components/questions_confirm_dialog";
 import { prisma } from "@/lib/db";
 import QuestionCard from "@/components/question_card";
 import { currentUser, isUnauthenticated } from "@/lib/auth";
+import { Suspense } from "react";
 
 export default async function Question({ params, searchParams }) {
   if (await isUnauthenticated())
@@ -34,14 +35,16 @@ export default async function Question({ params, searchParams }) {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      { (searchParams.dialog && question.index == 1) &&
-        <QuestionsConfirmDialog />
-      }
-      <QuestionCard
-        question={question}
-        totalQuestions={totalQuestions}
-        answer={answer}
-      />
+      <Suspense>
+        { (searchParams.dialog && question.index == 1) &&
+          <QuestionsConfirmDialog />
+        }
+        <QuestionCard
+          question={question}
+          totalQuestions={totalQuestions}
+          answer={answer}
+        />
+      </Suspense>
     </main>
   )
 }

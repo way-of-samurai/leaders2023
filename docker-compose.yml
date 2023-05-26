@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  app:
+    build: ./app
+    image: leaders2023-app
+    environment:
+      DATABASE_URL: "postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/leaders2023?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  db:
+    image: postgis/postgis:15-3.3-alpine
+    environment:
+      POSTGRES_DB: leaders2023
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  db:
