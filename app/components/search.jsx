@@ -35,10 +35,8 @@ function formatDow(code) {
   }
 }
 
-export default function Search() {
+export default function Search({categories, locations}) {
   const [groups, setGroups] = useState([])
-  const [categories, setCategories] = useState([])
-  const [locations, setLocations] = useState([])
 
   const getGroups = async (query) => {
     return fetch(`/api/search?${new URLSearchParams(query)}`)
@@ -46,34 +44,7 @@ export default function Search() {
       .then((data) => setGroups(data.groups))
   }
 
-  const getCategories = async () => {
-    return fetch(`/api/categories`)
-      .then((response) => response.json())
-      .then((data) => setCategories(data.categories))
-  }
-
-  const getLocations = async () => {
-    return fetch(`/api/locations`)
-      .then((response) => response.json())
-      .then((data) => setLocations([
-        {
-          name: "",
-          items: [{ id: 0, type: "ONLINE", name: "Онлайн" }]
-        },
-        {
-          name: "Район",
-          items: data.locations.filter((loc) => loc.type == "AREA")
-        },
-        {
-          name: "Станция метро",
-          items: data.locations.filter((loc) => loc.type = "METRO")
-        }
-      ]))
-  }
-
   useEffect(() => { getGroups(initialValues) }, [])
-  useEffect(() => { getCategories(initialValues) }, [])
-  useEffect(() => { getLocations(initialValues) }, [])
 
   const formik = useFormik({
     initialValues: initialValues,

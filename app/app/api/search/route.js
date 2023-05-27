@@ -165,7 +165,7 @@ async function getRecommendedGroups(user, params) {
 }
 
 async function getOtherGroups(user, params, limit) {
-  const groups = prisma.$queryRaw`
+  const groups = await prisma.$queryRaw`
     SELECT
       DISTINCT(groups.id),
       (CASE
@@ -300,24 +300,29 @@ export async function GET(request) {
 
   const groupIds = importantGroupIds + recommendedGroupIds + otherGroupIds
 
-  const groups = await prisma.$queryRaw`
-    SELECT
-      "public"."Group"."id",
-      "public"."Group"."address",
-      "public"."Group"."categoryId",
-    FROM "public"."Group"
-    JOIN unnest('{${Prisma.join(groupIds)}}'::int[]) WITH ORDINALITY t(id, ord) USING (id)
-    ORDER BY t.ord
-  `
+  let data =[]
+  if (groupIds.length) {
+    const groups = await prisma.$queryRaw`
+      SELECT
+        "public"."Group"."id",
+        "public"."Group"."address",
+        "public"."Group"."categoryId",
+      FROM "public"."Group"
+      JOIN unnest('{${Prisma.join(groupIds)}}'::int[]) WITH ORDINALITY t(id, ord) USING (id)
+      ORDER BY t.ord
+    `
+
+    data = groups.map((group) => ({
+      id: group.id,
+      categories: getCategories(group.categoryId),
+      address: group.address,
+      timetable: getTimetable(group.id)
+    }))
+  }
 
   return NextResponse.json(
     {
-      groups: groups.map((group) => ({
-        id: group.id,
-        categories: getCategories(group.categoryId),
-        address: group.address,
-        timetable: getTimetable(group.id)
-      })),
+      groups: data,
     },
     {
       status: 200
