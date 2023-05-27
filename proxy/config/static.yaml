@@ -1,11 +1,12 @@
 ---
 accessLog: {}
 certificatesResolvers:
-  acme:
-    email: dsinelnikov96@gmail.com
-    storage: /letsencrypt/acme.json
-    httpChallenge:
-      entryPoint: web
+  letsencrypt:
+    acme:
+      email: dsinelnikov96@gmail.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
 entryPoints:
   web:
     address: ":80"
@@ -18,7 +19,7 @@ entryPoints:
     address: ":443"
     http:
       tls:
-        certResolver: dns
+        certResolver: letsencrypt
 log:
   level: INFO
 providers:

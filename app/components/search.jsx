@@ -6,44 +6,6 @@ import Link from "next/link";
 import moment from "moment";
 import { Button, Card, Chip, InputText, MultiSelect } from "@/components/primereact"
 
-const directions = [
-  { code: "sport", label: "Спорт" },
-  { code: "language", label: "Язык" },
-  { code: "physical", label: "Физическая активность"},
-]
-
-const locations = [
-  {
-    id: 1,
-    label: "",
-    items: [{ label: "Онлайн" }]
-  },
-  {
-    label: "Район",
-    items: [
-      { id: 1, label: "Академический" },
-      { id: 2, label: "Алексеевский" },
-      { id: 3, label: "Алтуфьевский" },
-      { id: 4, label: "Арбат" },
-      { id: 5, label: "Аэропорт" },
-      { id: 6, label: "Бабушкинский" },
-      { id: 7, label: "Басманный" },
-    ]
-  },
-  {
-    label: "Станция метро",
-    items: [
-      { id: 11, label: "м. Домодедовская" },
-      { id: 12, label: "м. Кантемировская" },
-      { id: 13, label: "м. Каширская" },
-      { id: 14, label: "м. Коломенская" },
-      { id: 15, label: "м. Технопарк" },
-      { id: 16, label: "м. Автозаводская" },
-      { id: 17, label: "м. Павелецкая" },
-    ]
-  }
-]
-
 const dows = [
   { code: "MONDAY", label: "Понедельник" },
   { code: "TUESAY", label: "Вторник" },
@@ -55,7 +17,7 @@ const dows = [
 ]
 
 const initialValues = {
-  search: "",
+  query: "",
   category: [],
   location: [],
   dow: [],
@@ -75,6 +37,8 @@ function formatDow(code) {
 
 export default function Search() {
   const [groups, setGroups] = useState([])
+  const [categories, setCategories] = useState([])
+  const [locations, setLocations] = useState([])
 
   const getGroups = async (query) => {
     return fetch(`/api/search?${new URLSearchParams(query)}`)
@@ -82,13 +46,39 @@ export default function Search() {
       .then((data) => setGroups(data.groups))
   }
 
+  const getCategories = async () => {
+    return fetch(`/api/categories`)
+      .then((response) => response.json())
+      .then((data) => setCategories(data.categories))
+  }
+
+  const getLocations = async () => {
+    return fetch(`/api/locations`)
+      .then((response) => response.json())
+      .then((data) => setLocations([
+        {
+          name: "",
+          items: [{ id: 0, type: "ONLINE", name: "Онлайн" }]
+        },
+        {
+          name: "Район",
+          items: data.locations.filter((loc) => loc.type == "AREA")
+        },
+        {
+          name: "Станция метро",
+          items: data.locations.filter((loc) => loc.type = "METRO")
+        }
+      ]))
+  }
+
   useEffect(() => { getGroups(initialValues) }, [])
+  useEffect(() => { getCategories(initialValues) }, [])
+  useEffect(() => { getLocations(initialValues) }, [])
 
   const formik = useFormik({
     initialValues: initialValues,
     onSubmit: async (data) => {
       await getGroups(data)
-      console.log(groups)
     }
   })
 
@@ -101,26 +91,27 @@ export default function Search() {
         >
           <div className="flex flex-col items-stretch flex-grow gap-8">
             <InputText
-              id="search"
-              name="search"
+              id="query"
+              name="query"
               className="flex-grow"
               placeholder="Поиск"
-              value={formik.values.search}
+              value={formik.values.query}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
             <div className="flex flex-row flex-wrap justify-stretch w-full gap-2 gap-y-8">
               <span className="p-float-label flex-grow min-w-[200px]">
                 <MultiSelect
-                  id="direction"
-                  name="direction"
+                  id="category"
+                  name="category"
                   className="w-full"
-                  options={directions}
-                  optionLabel="label"
+                  options={categories}
+                  optionLabel="name"
+                  optionValue="id"
                   showSelectAll={false}
-                  maxSelectedLabels={2}
+                  maxSelectedLabels={1}
                   selectedItemsLabel="{0} выбрано"
-                  value={formik.values.direction}
+                  value={formik.values.category}
                   onChange={formik.handleChange}
                   filter
                 />
@@ -128,17 +119,17 @@ export default function Search() {
               </span>
               <span className="p-float-label flex-grow min-w-[200px]">
                 <MultiSelect
-                  inputId="type"
-                  name="type"
+                  inputId="location"
+                  name="location"
                   className="w-full"
                   options={locations}
                   optionGroupLabel="label"
                   optionGroupChildren="items"
-                  optionLabel="label"
+                  optionLabel="name"
                   showSelectAll={false}
-                  maxSelectedLabels={2}
+                  maxSelectedLabels={1}
                   selectedItemsLabel="{0} выбрано"
-                  value={formik.values.type}
+                  value={formik.values.location}
                   onChange={formik.handleChange}
                   filter
                 />
@@ -151,8 +142,9 @@ export default function Search() {
                   className="w-full"
                   options={dows}
                   optionLabel="label"
+                  optionValue="code"
                   showSelectAll={false}
-                  maxSelectedLabels={2}
+                  maxSelectedLabels={1}
                   selectedItemsLabel="{0} выбрано"
                   value={formik.values.dow}
                   onChange={formik.handleChange}
@@ -177,23 +169,23 @@ export default function Search() {
         </form>
       </Card>
       <div className="flex flex-row flex-wrap justify-between gap-4">
-        {groups.map((group, index) => (
+        {groups.map((group) => (
           <Card
-            key={index}
+            key={group.id}
             className="p-card-stretch flex-grow md:max-w-[50%]"
             title={
               <div className="flex flex-col">
-                <h5 className="text-base font-semibold">{group.categories.at(-2)}</h5>
-                <h2>{group.categories.at(-1)}</h2>
+                <h5 className="text-base font-semibold">{group.categories.at(-2).name}</h5>
+                <h2>{group.categories.at(-1).name}</h2>
               </div>
             }
             subTitle={
               <div className="flex flex-row flex-wrap gap-2">
-                { group.type == "OFFLINE" ?
+                { group.categories.at(-1).type == "OFFLINE" ?
                   <Chip label="Очное занятие" className="!text-sm !font-semibold" /> :
                   <Chip label="Онлайн занятие" className="!text-sm" />
                 }
-                { new Date(group.startDate) <= new Date() &&
+                { new Date(group.timetable.dateStart) <= new Date() &&
                   <Chip label="Группа занимается" className="!text-sm" />
                 }
               </div>
@@ -230,15 +222,15 @@ export default function Search() {
                 <p>
                   Занятия проводятся с
                   <span className="font-semibold ml-2">
-                    {moment(group.startDate).format("DD.MM.YYYY")}
+                    {moment(group.timetable.dateStart).format("DD.MM.YYYY")}
                   </span>
                 </p>
-                { group.timetable.map((time, index) => (
-                  <p key={index}>
+                { group.timetable.periods.map((period) => (
+                  <p key={period.id}>
                     <span className="font-semibold mr-2">
-                      {formatDow(time.dow)}
+                      {formatDow(period.dow)}
                     </span>
-                    {`${time.timeStart} - ${time.timeEnd}`}
+                    {`${period.timeStart} - ${period.timeEnd}`}
                   </p>
                 )) }
               </div>

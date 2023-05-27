@@ -1,10 +1,10 @@
 ---
 http:
   routers:
-    leaders2023:
+    leaders:
       entrypoints:
         - websecure
-      rule: Host(`leaders2023.hpclab.ru`)
+      rule: Host(`leaders.hpclab.ru`)
       service: leaders2023
 
   services:

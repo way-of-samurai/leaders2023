@@ -45,13 +45,14 @@ enum DayOfWeek {
 }
 
 model Location {
-  id        Int                                   @id @default(autoincrement())
-  createdAt DateTime                              @default(now())
-  updatedAt DateTime                              @default(now()) @updatedAt
-  type      LocationType
-  name      String
-  point     Unsupported("geometry(Point, 4326)")?
-  groups    Group[]
+  id          Int                                   @id @default(autoincrement())
+  createdAt   DateTime                              @default(now())
+  updatedAt   DateTime                              @default(now()) @updatedAt
+  type        LocationType
+  name        String
+  point       Unsupported("geometry(Point, 4326)")?
+  areaGroups  Group[]                               @relation("AreaGroups")
+  metroGroups Group[]                               @relation("MetroGroups")
 
   @@index([point], name: "location_point_idx", type: Gist)
 }
@@ -105,10 +106,12 @@ model Group {
   categoryId   Int
   address      String
   district     String?
-  area         Location?                            @relation(fields: [areaId], references: [id])
+  area         Location?                            @relation("AreaGroups", fields: [areaId], references: [id])
   areaId       Int?
+  metro        Location?                            @relation("MetroGroups", fields: [metroId], references: [id])
+  metroId      Int?
   addressPoint Unsupported("geometry(Point, 4326)")
-  important    Boolean                              @default(false)
+  important    Int                                  @default(0)
   timetable    Timetable[]
   attends      Attend[]
 
@@ -168,20 +171,20 @@ model QuestionAnswer {
 }
 
 model Attend {
-  id                 Int       @id @default(autoincrement())
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @default(now()) @updatedAt
+  id                 Int          @id @default(autoincrement())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
   externalActivityId Int
   externalGroupId    Int
   externalUserId     Int
-  group              Group     @relation(fields: [groupId], references: [id])
+  group              Group        @relation(fields: [groupId], references: [id])
   groupId            Int
-  user               User      @relation(fields: [userId], references: [id])
+  user               User         @relation(fields: [userId], references: [id])
   userId             Int
   type               CategoryType
-  date               DateTime  @db.Date
-  timeStart          DateTime  @db.Time(0)
-  timeEnd            DateTime  @db.Time(0)
+  date               DateTime     @db.Date
+  timeStart          DateTime     @db.Time(0)
+  timeEnd            DateTime     @db.Time(0)
 
   @@index(externalActivityId)
   @@index(externalGroupId)
