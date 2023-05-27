@@ -25,6 +25,7 @@ export default async function Home() {
       "public"."Location"."type",
       "public"."Location"."name"
     FROM "public"."Location"
+    ORDER BY "public"."Location"."name"
   `
   const locations = [
     {

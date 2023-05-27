@@ -54,6 +54,7 @@ model Location {
   areaGroups  Group[]                               @relation("AreaGroups")
   metroGroups Group[]                               @relation("MetroGroups")
 
+  @@unique([type, name])
   @@index([point], name: "location_point_idx", type: Gist)
 }
 
@@ -93,8 +94,6 @@ model Category {
   subcategories   Category[]       @relation("CategorySubcategories")
   groups          Group[]
   recommendations Recommendation[]
-
-  @@unique([level, name])
 }
 
 model Group {
