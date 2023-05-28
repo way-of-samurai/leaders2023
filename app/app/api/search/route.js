@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { currentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { linearConversion } from "@/lib/utils";
+import { groupBy, linearConversion } from "@/lib/utils";
 
 const groupsCount = 10
 
@@ -38,7 +38,7 @@ async function buildFilters(params) {
 
   if (params.get("location")) {
     let subfilters = []
-    const locs = params.get("location").group((loc) => loc.type)
+    const locs = groupBy(params.get("location"), (loc) => loc.type)
 
     if (locs.ONLINE)
       subfilters.push(`cats.type = 'ONLINE'`)

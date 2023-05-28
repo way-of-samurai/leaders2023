@@ -1,6 +1,16 @@
 version: '3'
 
 services:
+  nominatim:
+    image: mediagis/nominatim:4.2
+    environment:
+      PBF_PATH: "/russia-latest.osm.pbf"
+    volumes:
+      - ./russia-latest.osm.pbf:/russia-latest.osm.pbf:ro
+      - nominatim:/var/lib/postgresql/14/main
+    ports:
+      - "8080:8080"
+
   db:
     image: postgis/postgis:15-3.3-alpine
     environment:
@@ -14,3 +24,4 @@ services:
 
 volumes:
   db:
+  nominatim:
