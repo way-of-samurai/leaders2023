@@ -25,25 +25,12 @@ dbProperties = {"user": dbUser,"password": dbPassword,
 print("data loading...")
 
 # data read and preparation
-attendance = spark.read.csv('/data/attend.csv', header='true', inferSchema = 'true')
-attendance = attendance.drop('дата занятия') \
-                        .drop('время начала занятия') \
-                        .drop('время окончания занятия') \
-                        .drop('направление 2') \
-                        .drop('направление 3') \
-                        .drop('уникальный номер занятия') \
-                        .withColumnRenamed('уникальный номер группы', 'groupId') \
-                        .withColumnRenamed('уникальный номер участника', 'userId') \
-                        .withColumn("rank", when((attendance['онлайн/офлайн'] == "Да"), 1) \
-                                                .when((attendance['онлайн/офлайн'] == "Нет"), 1) \
-                                                .otherwise(lit("0"))) \
-                        .drop('онлайн/офлайн')
 
-#attendanceFromDB = spark.read.jdbc(dbUrl,'public."Attend"', properties=dbProperties)
-#attendance=attendanceFromDB.select("groupId","userId","type") \
-#            .withColumn("rank", when((attendanceFromDB['type'] == 'ONLINE'), 1) \
-#                                .when((attendanceFromDB['type'] == 'OFFLINE'), 1) \
-#                                .otherwise(lit("0")))
+attendanceFromDB = spark.read.jdbc(dbUrl,'public."Attend"', properties=dbProperties)
+attendance=attendanceFromDB.select("groupId","userId","type") \
+            .withColumn("rank", when((attendanceFromDB['type'] == 'ONLINE'), 1) \
+                                .when((attendanceFromDB['type'] == 'OFFLINE'), 1) \
+                                .otherwise(lit("0")))
 
 attendance = attendance.withColumn("rank", col('rank').cast(IntegerType()))
 
@@ -60,22 +47,9 @@ lvl0123JoinedDF = level3Categories.join(lvl012JoinedDF, level3Categories.lvl3par
 
 categories = lvl0123JoinedDF.select("lvl0id", "lvl0name", "lvl3id","lvl3name")
 
-groups = spark.read.csv('/data/groups.csv', header='true', inferSchema = 'true')
-groups = groups.drop('направление 1') \
-                        .drop('направление 2') \
-                        .drop('адрес площадки') \
-                        .drop('округ площадки') \
-                        .drop('район площадки') \
-                        .drop('расписание в активных периодах') \
-                        .drop('расписание в закрытых периодах') \
-                        .drop('расписание в плановом периоде') \
-                        .withColumnRenamed('уникальный номер', 'groupId') \
-                        .withColumnRenamed('направление 3', 'lvl3name')
-groupsWithLevelIds = categories.join(groups, 'lvl3name')
-
-#groupsFromDB = spark.read.jdbc(dbUrl,'public."Group"', properties=dbProperties)
-#groups=groupsFromDB.select(col("id").alias("groupId"),col("categoryId"))
-#groupsWithLevelIds = categories.join(groups, categories.lvl3id == groups.categoryId).drop("categoryId")
+groupsFromDB = spark.read.jdbc(dbUrl,'public."Group"', properties=dbProperties)
+groups=groupsFromDB.select(col("id").alias("groupId"),col("categoryId"))
+groupsWithLevelIds = categories.join(groups, categories.lvl3id == groups.categoryId).drop("categoryId")
 
 attendanceWithLevelIds=attendance.join(groupsWithLevelIds, 'groupId')
 
