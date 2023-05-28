@@ -1,16 +1,27 @@
-FROM python:3.8-alpine
+FROM ubuntu:latest
 
+# Install OpenJDK 8
 RUN \
-  apk --no-cache add musl-dev linux-headers g++ openjdk8 && \
-  pip install pyspark numpy && \
-  mkdir -p /app
+  apt-get update && \
+  apt-get install -y openjdk-8-jdk && \
+  rm -rf /var/lib/apt/lists/*
 
-ENV JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk"
+# Install Python
+RUN \
+    apt-get update && \
+    apt-get install -y python-is-python3 python-dev-is-python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Install PySpark and Numpy
+RUN \
+    pip install --upgrade pip && \
+    pip install numpy && \
+    pip install pyspark==3.2.1
+
+# Define working directory
+WORKDIR /data
+
 COPY . .
 
-RUN \
-  echo "0 4 * * * ash -c 'cd /app && python main.py'" >> /etc/crontabs/root
 
-CMD ["crond", "-l", "6", "-f"]
+CMD ["python", "main.py"]
