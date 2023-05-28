@@ -1,8 +1,11 @@
 FROM python:3.8-alpine
 
 RUN \
-  pip install pyspark && \
+  apk --no-cache add musl-dev linux-headers g++ openjdk8 && \
+  pip install pyspark numpy && \
   mkdir -p /app
+
+ENV JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk"
 
 WORKDIR /app
 COPY . .
