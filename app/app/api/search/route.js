@@ -268,7 +268,7 @@ async function getTimetable(groupId) {
 export async function POST(request) {
   const params = await request.json()
 
-  const userId = await currentUserId()
+  const userId = params.userId ? params.userId : await currentUserId()
   const user = (await prisma.$queryRaw`
     SELECT
       "public"."User"."id",
@@ -297,6 +297,7 @@ export async function POST(request) {
     const groups = await prisma.$queryRawUnsafe(`
       SELECT
         "public"."Group"."id",
+        "public"."Group"."externalId",
         "public"."Group"."address",
         "public"."Group"."categoryId"
       FROM "public"."Group"
@@ -311,6 +312,7 @@ export async function POST(request) {
 
     data = groups.map((group) => ({
       id: group.id,
+      externalId: group.externalId,
       categories: group.categories,
       address: group.address,
       timetable: group.timetable
