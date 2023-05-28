@@ -598,9 +598,9 @@ async function seedQuestions() {
 }
 
 async function main() {
-  // await seedAreas()
-  // await seedMetro()
-  // await seedGroups()
+  await seedAreas()
+  await seedMetro()
+  await seedGroups()
   await seedQuestions()
 }
 
