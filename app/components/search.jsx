@@ -8,7 +8,7 @@ import { Button, Card, Chip, InputText, MultiSelect } from "@/components/primere
 
 const dows = [
   { code: "MONDAY", label: "Понедельник" },
-  { code: "TUESAY", label: "Вторник" },
+  { code: "TUESDAY", label: "Вторник" },
   { code: "WENDSDAY", label: "Среда" },
   { code: "THURSDAY", label: "Четверг" },
   { code: "FRIDAY", label: "Пятница" },
@@ -38,8 +38,14 @@ function formatDow(code) {
 export default function Search({categories, locations}) {
   const [groups, setGroups] = useState([])
 
-  const getGroups = async (query) => {
-    return fetch(`/api/search?${new URLSearchParams(query)}`)
+  const getGroups = async (data) => {
+    return fetch("/api/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data)
+      })
       .then((response) => response.json())
       .then((data) => setGroups(data.groups))
   }
@@ -94,7 +100,7 @@ export default function Search({categories, locations}) {
                   name="location"
                   className="w-full"
                   options={locations}
-                  optionGroupLabel="label"
+                  optionGroupLabel="name"
                   optionGroupChildren="items"
                   optionLabel="name"
                   showSelectAll={false}
@@ -143,16 +149,20 @@ export default function Search({categories, locations}) {
         {groups.map((group) => (
           <Card
             key={group.id}
-            className="p-card-stretch flex-grow md:max-w-[50%]"
+            className="p-card-stretch flex-grow md:max-w-[49%]"
             title={
               <div className="flex flex-col">
-                <h5 className="text-base font-semibold">{group.categories.at(-2).name}</h5>
-                <h2>{group.categories.at(-1).name}</h2>
+                <h5 className="text-base font-semibold">
+                  {group.categories[1].name.replace("ОНЛАЙН", "").trim()}
+                </h5>
+                <h2>
+                  {group.categories[0].name.replace("ОНЛАЙН", "").trim()}
+                </h2>
               </div>
             }
             subTitle={
               <div className="flex flex-row flex-wrap gap-2">
-                { group.categories.at(-1).type == "OFFLINE" ?
+                { group.categories[0].type == "OFFLINE" ?
                   <Chip label="Очное занятие" className="!text-sm !font-semibold" /> :
                   <Chip label="Онлайн занятие" className="!text-sm" />
                 }
@@ -201,7 +211,7 @@ export default function Search({categories, locations}) {
                     <span className="font-semibold mr-2">
                       {formatDow(period.dow)}
                     </span>
-                    {`${period.timeStart} - ${period.timeEnd}`}
+                    {`${moment(period.timeStart).format("HH:mm")} - ${moment(period.timeEnd).format("HH:mm")}`}
                   </p>
                 )) }
               </div>

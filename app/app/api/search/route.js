@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import { groupBy, linearConversion } from "@/lib/utils";
 
 const groupsCount = 10
@@ -9,61 +8,52 @@ const groupsCount = 10
 async function buildFilters(params) {
   let filters = []
 
-  if (params.get("query"))
-    filters.push(`cats.name ILIKE '${params.get("query")}%'`)
+  if (params.query)
+    filters.push(`cats.name ILIKE '${params.query}%'`)
 
-  if (params.get("category")) {
-    const cat1Ids = params.get("category").map((cat) => cat.id)
-    const cats = await prisma.$queryRaw`
-      WITH RECURSIVE cats AS (
-        SELECT "public"."Category".*
-        FROM "public"."Category"
-        WHERE "public"."Category"."id" IN ${Prisma.join(cat1Ids)}
-
-        UNION
-
-        SELECT child.*
-        FROM "public"."Category" child
-        INNER JOIN "public"."Category" parent
-          ON child."parentId" = parent."id"
-        WHERE child.level = 3
-      )
+  if (params.category && params.category.length) {
+    const cats = await prisma.$queryRawUnsafe(`
       SELECT cats.id
-      FROM cats
-    `
+      FROM "public"."Category" cats
+      JOIN "public"."Category" cats2
+        ON cats2.id = cats."parentId"
+      JOIN "public"."Category" cats1
+        ON cats1.id = cats2."parentId"
+      WHERE cats.level = 3
+        AND cats1.id IN (${params.category.join(",")})
+    `)
 
     const ids = cats.map((cat) => cat.id)
-    filters.push(`cats.id IN (${Prisma.join(ids)})`)
+    filters.push(`cats.id IN (${ids.join(",")})`)
   }
 
-  if (params.get("location")) {
+  if (params.location && params.location.length) {
     let subfilters = []
-    const locs = groupBy(params.get("location"), (loc) => loc.type)
+    const locs = groupBy(params.location, (loc) => loc.type)
 
-    if (locs.ONLINE)
+    if (locs.ONLINE && locs.ONLINE.length)
       subfilters.push(`cats.type = 'ONLINE'`)
 
-    if (locs.AREA) {
+    if (locs.AREA && locs.AREA.length) {
       const ids = locs.AREA.map((loc) => loc.id)
-      subfilters.push(`"public"."Group"."areaId" IN (${Prisma.join(ids)})`)
+      subfilters.push(`"public"."Group"."areaId" IN (${ids.join(",")})`)
     }
 
-    if (locs.METRO) {
+    if (locs.METRO && locs.METRO.length) {
       const ids = locs.METRO.map((loc) => loc.id)
-      subfilters.push(`"public"."Group"."metroId" IN (${Prisma.join(ids)})`)
+      subfilters.push(`"public"."Group"."metroId" IN (${ids.join(",")})`)
     }
 
-    if (filters.length)
+    if (subfilters.length)
       filters.push(`(${subfilters.join(" OR ")})`)
   }
 
-  if (params.get("dow"))
-    filters.push(`public"."Timetable"."dow" IN (${Prisma.join(params.get("dow"))})`)
+  if (params.dow && params.dow.length)
+    filters.push(`"public"."Timetable"."dow" IN (${params.dow.map((x) => `'${x}'`).join(",")})`)
 
-  if (!filters.length)
-    return Prisma.empty
+  if (!filters.length) return ""
 
-  return Prisma.sql`AND ${filters.join(" AND ")}`
+  return `AND ${filters.join(" AND ")}`
 }
 
 async function getImportantGroups(user) {
@@ -94,11 +84,11 @@ async function getRecommendedGroups(user, params) {
     ORDER BY "public"."Recommendation"."rank"
   `
 
-  const totalRank = cats0.reduce((a, b) => a + b, 0)
+  const totalRank = cats0.map((cat) => cat.rank).reduce((a, b) => a + b, 0)
 
   for (const cat0 of cats0) {
     const limit = linearConversion([0, totalRank], [0, groupsCount], cat0.rank)
-    groups = groups + await prisma.$queryRaw`
+    groups = groups + await prisma.$queryRawUnsafe(`
       WITH RECURSIVE cats AS (
         SELECT "public"."Category".*
         FROM "public"."Category"
@@ -158,14 +148,14 @@ async function getRecommendedGroups(user, params) {
         "distanceOrder" ASC,
         "rank" DESC
       LIMIT ${limit}
-    `
+    `)
   }
 
   return groups.map((group) => group.id)
 }
 
 async function getOtherGroups(user, params, limit) {
-  const groups = await prisma.$queryRaw`
+  const groups = await prisma.$queryRawUnsafe(`
     SELECT
       DISTINCT(groups.id),
       (CASE
@@ -206,7 +196,7 @@ async function getOtherGroups(user, params, limit) {
       "daysOrder" ASC,
       "distanceOrder" ASC
     LIMIT ${limit}
-  `
+  `)
 
   return groups.map((group) => group.id)
 }
@@ -230,7 +220,7 @@ async function getCategories(categoryId) {
       cats."level",
       cats."type",
       cats."name",
-      cats."description",
+      cats."description"
     FROM cats
     ORDER BY cats.level DESC
   `
@@ -257,16 +247,15 @@ async function getTimetable(groupId) {
 
   if (!timetable.length) return []
 
-  const startDate = timetable[0].dateStart
-  const endDate = timetable[0].dateEnd
-  const periods = timetable.filter((period) =>
-    period.dateStart == startDate &&
-    period.dateEnd == endDate
-  )
+  const dateStart = timetable[0].dateStart
+  const dateEnd = timetable[0].dateEnd
+  const periods = timetable.filter((period) => (
+    period.dateStart.getTime() === dateStart.getTime()
+  ))
 
   return {
-    startDate: startDate,
-    endDate: endDate,
+    dateStart: dateStart,
+    dateEnd: dateEnd,
     periods: periods.map((period) => ({
       id: period.id,
       dow: period.dow,
@@ -276,8 +265,8 @@ async function getTimetable(groupId) {
   }
 }
 
-export async function GET(request) {
-  const params = request.nextUrl.searchParams
+export async function POST(request) {
+  const params = await request.json()
 
   const userId = await currentUserId()
   const user = (await prisma.$queryRaw`
@@ -298,25 +287,33 @@ export async function GET(request) {
     otherGroupIds = await getOtherGroups(user, params, limit)
   }
 
-  const groupIds = importantGroupIds + recommendedGroupIds + otherGroupIds
+  const groupIds = []
+    .concat(importantGroupIds)
+    .concat(recommendedGroupIds)
+    .concat(otherGroupIds)
 
-  let data =[]
+  let data = []
   if (groupIds.length) {
-    const groups = await prisma.$queryRaw`
+    const groups = await prisma.$queryRawUnsafe(`
       SELECT
         "public"."Group"."id",
         "public"."Group"."address",
-        "public"."Group"."categoryId",
+        "public"."Group"."categoryId"
       FROM "public"."Group"
-      JOIN unnest('{${Prisma.join(groupIds)}}'::int[]) WITH ORDINALITY t(id, ord) USING (id)
+      JOIN unnest('{${groupIds.join(",")}}'::int[]) WITH ORDINALITY t(id, ord) USING (id)
       ORDER BY t.ord
-    `
+    `)
+
+    for (let i = 0; i < groups.length; i++) {
+      groups[i].categories = await getCategories(groups[i].categoryId)
+      groups[i].timetable = await getTimetable(groups[i].id)
+    }
 
     data = groups.map((group) => ({
       id: group.id,
-      categories: getCategories(group.categoryId),
+      categories: group.categories,
       address: group.address,
-      timetable: getTimetable(group.id)
+      timetable: group.timetable
     }))
   }
 

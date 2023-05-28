@@ -348,7 +348,11 @@ async function seedGroups() {
           q = city
           obj = await findAddr(q)
           if (!obj)
-            throw `Coords ${q} not found: ${address}`
+            console.warn(`Coords ${q} not found: ${address}`)
+            return {
+              long: 37.6063916,
+              lat: 55.625578
+            }
         }
       }
     }
@@ -374,8 +378,10 @@ async function seedGroups() {
         AND cats2."name" ILIKE ${`%${catNames[1]}%`}
         AND cats1."name" ILIKE ${`%${catNames[0]}%`}
     `
-    if (!cats.length)
-      throw `Failed to get category for: ${names}`
+    if (!cats.length) {
+      console.warn(`Failed to get category for: ${names}`)
+      return null
+    }
 
     return cats[0].id
   }
@@ -496,9 +502,19 @@ async function seedGroups() {
     return periods
   }
 
+  let doit = false
   const data = fs.readFileSync("./prisma/data/groups.csv")
   const rows = parse(data, { delimeter: ",", from_line: 2 })
   for (const row of rows) {
+    if (row[0] == '801370154') {
+      doit = true
+      continue
+    }
+
+    if (!doit) continue
+
+    const categoryId = await getCategoryId([row[1], row[2], row[3]])
+    if (!categoryId) continue
     const { long, lat } = await getCoords(row[4])
     const areaId = await getAreaId(row[6])
     const metroId = await getMetroId(long, lat)
@@ -511,7 +527,7 @@ async function seedGroups() {
       VALUES
         (
           ${row[0]},
-          ${await getCategoryId([row[1], row[2], row[3]])},
+          ${categoryId},
           '${row[4]}',
           '${row[5] ? row[5].split(",")[0].trim() : "NULL"}',
           ${areaId ?? "NULL"},

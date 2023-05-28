@@ -38,7 +38,8 @@ export default async function Home() {
     },
     {
       name: "Станция метро",
-      items: locs.filter((loc) => loc.type = "METRO")
+      items: locs.filter((loc) => loc.type == "METRO")
+                 .map((loc) => ({...loc, name: `м. ${loc.name}`}))
     }
   ]
 
