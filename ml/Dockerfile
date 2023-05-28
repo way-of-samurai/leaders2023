@@ -19,9 +19,11 @@ RUN \
     pip install pyspark==3.2.1
 
 # Define working directory
-WORKDIR /data
+WORKDIR /app
 
 COPY . .
 
+RUN \
+  echo "0 4 * * * bash -c 'cd /app && python main.py'" >> /etc/crontab
 
-CMD ["python", "main.py"]
+CMD ["cron", "-l", "6", "-f"]

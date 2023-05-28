@@ -504,17 +504,9 @@ async function seedGroups() {
     return periods
   }
 
-  let doit = false
   const data = fs.readFileSync("./prisma/data/groups.csv")
   const rows = parse(data, { delimeter: ",", from_line: 2 })
   for (const row of rows) {
-    if (row[0] == '801370154') {
-      doit = true
-      continue
-    }
-
-    if (!doit) continue
-
     const categoryId = await getCategoryId([row[1], row[2], row[3]])
     if (!categoryId) continue
     const { long, lat } = await getCoords(row[4])
@@ -566,6 +558,135 @@ async function seedGroups() {
   }
 }
 
+async function seedUsers() {
+  const getGender = (str) => {
+    if (str.includes("Мужчина")) return "MALE"
+    return "FEMALE"
+  }
+
+  const getCoords = async (address) => {
+    let addr = address
+    if (address.startsWith('"')) addr = addr.slice(1, -1)
+
+    addr = addr.split(",").map((s) => s.trim())
+
+    const city = (addr.find((s) =>
+        s.includes("город") ||
+        s.includes("г.") ||
+        s.includes("Москва")
+      ) ?? addr[0])
+      .replaceAll("город", "")
+      .replaceAll("г.", "")
+      .trim() || "Москва"
+
+    const street = (addr.find((s) =>
+        s.includes("улица") ||
+        s.includes("ул.") ||
+        s.includes("бульвар") ||
+        s.includes("проспект") ||
+        s.includes("просек")
+      ) ?? addr[1])
+      .replaceAll("улица", "")
+      .replaceAll("ул.", "")
+      .replaceAll("бульвар", "")
+      .replaceAll("проспект", "")
+      .replaceAll("просек", "")
+      .trim()
+
+    const building = (addr.find((s) =>
+        s.includes("дом") ||
+        s.includes("д.")
+      ) ?? "")
+      .replaceAll("дом", "")
+      .replaceAll("д.", "")
+      .trim()
+
+    const number1 = (addr.find((s) =>
+        s.includes("корпус") ||
+        s.includes("к.")
+      ) ?? "")
+      .replaceAll("корпус", "")
+      .replaceAll("к.", "")
+      .trim()
+
+    const number2 = (addr.find((s) =>
+        s.includes("строение") ||
+        s.includes("стр.")
+      ) ?? "")
+      .replaceAll("строение", "")
+      .replaceAll("стр.", "")
+      .trim()
+
+    let q = [
+      city,
+      street,
+      building
+    ].filter((x) => x).join(", ")
+    if (number1) q += `/${number1}`
+    if (number2) q += ` с${number2}`
+
+    let obj = await findAddr(q)
+    if (!obj) {
+      q = [
+        city,
+        street,
+        building
+      ].filter((x) => x).join(", ")
+
+      obj = await findAddr(q)
+      if (!obj) {
+        q = [
+          city,
+          street
+        ].filter((x) => x).join(", ")
+
+        obj = await findAddr(q)
+        if (!obj) {
+          q = city
+          obj = await findAddr(q)
+          if (!obj)
+            console.warn(`Coords ${q} not found: ${address}`)
+            return {
+              long: 37.6063916,
+              lat: 55.625578
+            }
+        }
+      }
+    }
+
+    return {
+      long: parseFloat(obj.lon),
+      lat: parseFloat(obj.lat),
+    }
+  }
+
+  const data = fs.readFileSync("./prisma/data/users.csv")
+  const rows = parse(data, { delimeter: ",", from_line: 2 })
+  for (const row of rows) {
+    const { long, lat } = await getCoords(row[4])
+    const gender = getGender(row[2])
+
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "public"."User"(
+        "externalId", "firstName", "lastName", "middleName",
+        "gender", "birthdate", "address", "addressPoint"
+      )
+      VALUES
+        (
+          ${row[0]},
+          '${row[0]}',
+          '${row[0]}',
+          '${row[0]}',
+          '${gender}',
+          '${row[3]}',
+          '${row[4]}',
+          ST_SetSRID(ST_MakePoint(${long}, ${lat}), 4326)
+        )
+    `)
+    await delay(50)
+  }
+}
+
 async function seedQuestions() {
   questions.forEach(async (q, i) => {
     const res = await prisma.question.upsert({
@@ -598,10 +719,11 @@ async function seedQuestions() {
 }
 
 async function main() {
-  await seedAreas()
-  await seedMetro()
-  await seedGroups()
-  await seedQuestions()
+  // await seedAreas()
+  // await seedMetro()
+  // await seedQuestions()
+  // await seedGroups()
+  await seedUsers()
 }
 
 main()
