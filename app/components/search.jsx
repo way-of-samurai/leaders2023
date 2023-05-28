@@ -60,7 +60,7 @@ export default function Search({categories, locations}) {
   })
 
   return (
-    <div className="max-w-full w-[850px] flex flex-col gap-4">
+    <div className="max-w-full w-[850px] flex flex-col flex-grow gap-4">
       <Card>
         <form
           className="flex flex-row flex-wrap justify-stretch gap-2 gap-y-8"
