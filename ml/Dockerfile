@@ -3,7 +3,7 @@ FROM ubuntu:latest
 # Install OpenJDK 8
 RUN \
   apt-get update && \
-  apt-get install -y openjdk-8-jdk && \
+  apt-get install -y openjdk-8-jdk cron && \
   rm -rf /var/lib/apt/lists/*
 
 # Install Python
@@ -24,6 +24,6 @@ WORKDIR /app
 COPY . .
 
 RUN \
-  echo "0 4 * * * bash -c 'cd /app && python main.py'" >> /etc/crontab
+  echo "* * * * * cd /app && python main.py > /dev/stdout" >> /etc/crontab
 
 CMD ["cron", "-l", "6", "-f"]
