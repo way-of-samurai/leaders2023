@@ -11,6 +11,17 @@ services:
       - "3000:3000"
     restart: unless-stopped
 
+  ml:
+    build: ./ml
+    image: leaders2023-ml
+    environment:
+      DB_URL: "jdbc:postgresql://db:5432/leaders2023"
+      DB_USER: "postgres"
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
   db:
     image: postgis/postgis:15-3.3-alpine
     environment:
