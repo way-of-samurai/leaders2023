@@ -8,6 +8,9 @@ const groupsCount = 10
 async function buildFilters(params) {
   let filters = []
 
+  if (params.future)
+    filters.push(`"public"."Group"."future" = TRUE`)
+
   if (params.query)
     filters.push(`cats.name ILIKE '${params.query}%'`)
 

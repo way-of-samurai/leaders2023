@@ -1,12 +1,15 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Search from "@/components/search";
-import { isUnauthenticated } from "@/lib/auth";
+import { currentUser, isUnauthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import Navbar from "@/components/navbar";
 
 export default async function Home() {
   if (await isUnauthenticated())
     redirect("/sign_in")
+
+  const user = await currentUser()
 
   const categories = await prisma.$queryRaw`
     SELECT
@@ -44,13 +47,16 @@ export default async function Home() {
   ]
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <Suspense>
-        <Search
-          categories={categories}
-          locations={locations}
-        />
-      </Suspense>
-    </main>
+    <div className="w-[850px] m-auto">
+      <Navbar user={user} />
+      <main className="flex flex-col items-center justify-center p-4">
+        <Suspense>
+          <Search
+            categories={categories}
+            locations={locations}
+          />
+        </Suspense>
+      </main>
+    </div>
   )
 }

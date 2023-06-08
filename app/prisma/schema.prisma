@@ -103,6 +103,7 @@ model Group {
   externalId   Int                                  @unique
   category     Category                             @relation(fields: [categoryId], references: [id])
   categoryId   Int
+  future       Boolean                              @default(false)
   address      String
   district     String?
   area         Location?                            @relation("AreaGroups", fields: [areaId], references: [id])

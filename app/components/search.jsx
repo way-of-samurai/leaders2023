@@ -60,7 +60,7 @@ export default function Search({categories, locations}) {
   })
 
   return (
-    <div className="max-w-full w-[850px] flex flex-col flex-grow gap-4">
+    <div className="max-w-full w-full flex flex-col flex-grow gap-4">
       <Card>
         <form
           className="flex flex-row flex-wrap justify-stretch gap-2 gap-y-8"
@@ -197,6 +197,10 @@ export default function Search({categories, locations}) {
           >
             <div className="flex flex-col justify-between gap-4 h-full">
               <div>
+                <p className="text-lg mb-1">
+                  <span className="font-semibold">Группа </span>
+                  {group.externalId}
+                </p>
                 <p>{group.address}</p>
               </div>
               <div>
