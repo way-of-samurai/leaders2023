@@ -718,12 +718,25 @@ async function seedQuestions() {
   })
 }
 
+async function seedFuture() {
+  const data = fs.readFileSync("./prisma/data/future_groups.csv")
+  const rows = parse(data, { delimeter: ",", from_line: 1 })
+  for (const row of rows) {
+    await prisma.$executeRawUnsafe(`
+      UPDATE "public"."Group"
+      SET "future" = TRUE
+      WHERE "public"."Group"."externalId" = ${row[0]}
+    `)
+  }
+}
+
 async function main() {
-  // await seedAreas()
-  // await seedMetro()
-  // await seedQuestions()
-  // await seedGroups()
+  await seedAreas()
+  await seedMetro()
+  await seedQuestions()
+  await seedGroups()
   await seedUsers()
+  await seedFuture()
 }
 
 main()
